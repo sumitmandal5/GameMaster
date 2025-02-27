@@ -5,6 +5,7 @@ from PIL import Image
 from io import BytesIO
 
 BASE_URL = "https://pokeapi.co/api/v2/pokemon/"
+pokemon_cache = {}
 
 def get_pokemon_data(id):
     """Fetches Pokemon data."""
@@ -26,12 +27,15 @@ threshold = 50 (adjust if needed).
 Transparency Fix
 Any white pixels are turned transparent ((255, 255, 255, 0)).
 '''
-def get_pokemon_silhouette(sprite_url, pokemon_id):
+def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
     """Converts a Pokémon image into a silhouette and returns its stored URL."""
     silhouette_dir = "static/silhouettes"
+    real_image_dir = "static/realImages"
     os.makedirs(silhouette_dir, exist_ok=True)  # Ensure directory exists
+    os.makedirs(real_image_dir, exist_ok=True)
 
     silhouette_path = f"{silhouette_dir}/{pokemon_id}.png"
+    real_image_path = f"{real_image_dir}/{pokemon_id}.png"
 
     # If silhouette already exists, return the existing file path
     if os.path.exists(silhouette_path):
@@ -40,6 +44,7 @@ def get_pokemon_silhouette(sprite_url, pokemon_id):
     response = requests.get(sprite_url)
     if response.status_code == 200:
         img = Image.open(BytesIO(response.content)).convert("RGBA")  # Ensure transparency
+        img.save(real_image_path, format="PNG")  # Save real image
 
         # Convert image to grayscale
         img = img.convert("L")
@@ -67,12 +72,18 @@ def get_pokemon_silhouette(sprite_url, pokemon_id):
 def get_random_pokemon_data():
     """Generates a random Pokemon id and fetches data"""
     random_id = random.randint(1, 50)
-    pokemon = get_pokemon_data(random_id)
+    if random_id in pokemon_cache:
+        return pokemon_cache[random_id]
+    else:
+        pokemon = get_pokemon_data(random_id)
 
     if "error" in pokemon:
         return pokemon  # Return error if Pokemon not found
 
-    data_to_return = {"id": pokemon["id"], "name": pokemon["name"],
-                      "silhouette": get_pokemon_silhouette(pokemon["sprites"]["other"]["official-artwork"]["front_shiny"], pokemon["id"])}
+    data_to_return = {"id": pokemon["id"],
+                      "name": pokemon["name"],
+                      "silhouette": get_pokemon_silhouette_and_save_images(pokemon["sprites"]["other"]["official-artwork"]["front_shiny"], pokemon["id"])
+                      }
+    pokemon_cache[random_id] = data_to_return
 
     return data_to_return
