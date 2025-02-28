@@ -8,13 +8,9 @@ from app import create_app
 def client():
     app = create_app()
     app.config['TESTING'] = True
-    return app.test_client()
+    with app.test_client() as client:
+        yield client
 
-
-# def test_get_pokemon(client):
-# response = client.get('/pokemon/pikachu')
-# assert response.status_code == 200
-# assert "name" in response.json
 
 @patch("app.services.get_random_pokemon_data", return_value={
     "id": 25,
