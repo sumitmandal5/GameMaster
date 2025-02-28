@@ -141,8 +141,8 @@ def check_pokemon_guess(pokemon_id, guessed_name):
     correct_name = pokemon["name"]
 
     return {
-        "correct_name": correct_name,
-        "full_image": get_pokemon_image_and_save(pokemon["sprite"], pokemon_id),
+        "correctName": correct_name,
+        "fullImage": get_pokemon_image_and_save(pokemon["sprite"], pokemon_id),
         "guessCorrect": guessed_name.lower() == correct_name.lower()
     }
 
