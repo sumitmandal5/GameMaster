@@ -116,3 +116,36 @@ def get_random_pokemon_data():
         "silhouetteImage": get_pokemon_silhouette_and_save_images(pokemon["sprite"], pokemon["id"]),
         "options": name_options
     }
+
+
+def check_pokemon_guess(pokemon_id, guessed_name):
+    """Check if the player guessed correct name and return result"""
+    pokemon = get_pokemon_data(pokemon_id)
+
+    if "error" in pokemon:
+        return {"error": f"Pokemon with ID {pokemon_id} not found"}
+
+    correct_name = pokemon["name"]
+
+    return {
+        "id": pokemon_id,
+        "correct_name": correct_name,
+        "full_image": get_pokemon_image_and_save(pokemon["sprite"], pokemon_id),
+        "guessCorrect": guessed_name.lower() == correct_name.lower()
+    }
+
+
+def get_pokemon_image_and_save(sprite_url, pokemon_id):
+    """check if the image is saved and send it"""
+    real_image_dir = "static/realImages"
+    real_image_path = f"{real_image_dir}/{pokemon_id}.png"
+    if os.path.exists(real_image_path):
+        return f"http://127.0.0.1:5000/{real_image_path}"
+
+    response = requests.get(sprite_url)
+    if response.status_code == 200:
+        img = Image.open(BytesIO(response.content)).convert("RGBA")  # Ensure transparency
+        img.save(real_image_path, format="PNG")  # Save real image
+        return f"http://127.0.0.1:5000/{real_image_path}"
+
+    return None

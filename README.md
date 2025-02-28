@@ -6,3 +6,7 @@
 
 # Command to run unit tests:
 python -m pytest
+
+# Edge Cases
+1. What if just before fetching the image, it gets deleted. AWS S3 is very reliable. 
+However it is a design choice if we want to handle this scenario.
