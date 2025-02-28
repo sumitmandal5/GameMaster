@@ -7,13 +7,25 @@ from io import BytesIO
 BASE_URL = "https://pokeapi.co/api/v2/pokemon/"
 pokemon_cache = {}
 
+
 def get_pokemon_data(id):
-    """Fetches Pokemon data."""
+    """Fetches Pokemon data and caches in-memory"""
+    if id in pokemon_cache:
+        return pokemon_cache[id]
     try:
         response = requests.get(f"{BASE_URL}{id}")
         response.raise_for_status()
-        if response.status_code == 200:
-            return response.json()
+        data = response.json()
+
+        pokemon_info = {
+            "id": data["id"],
+            "name": data["name"],
+            "sprite": data["sprites"]["other"]["official-artwork"]["front_shiny"]
+        }
+
+        pokemon_cache[id] = pokemon_info
+        return pokemon_info
+
     except requests.exceptions.RequestException:
         return {"error": f"Pokemon with ID {id} not found"}
 
@@ -27,6 +39,8 @@ threshold = 50 (adjust if needed).
 Transparency Fix
 Any white pixels are turned transparent ((255, 255, 255, 0)).
 '''
+
+
 def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
     """Converts a Pokémon image into a silhouette and returns its stored URL."""
     silhouette_dir = "static/silhouettes"
@@ -69,21 +83,37 @@ def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
         return f"http://127.0.0.1:5000/{silhouette_path}"  # Return URL
     return None
 
+
+'''
+Fetch the correct Pokemon using random_id (cached if available).
+Get three random decoy Pokemon (ensuring they are not the correct Pokemon).
+Check cache for decoys and fetch their names if missing.
+Randomly shuffle the correct answer within the list of four options.
+Return the final response with Pokemon ID, silhouette, and shuffled names.
+'''
+
+
 def get_random_pokemon_data():
     """Generates a random Pokemon id and fetches data"""
     random_id = random.randint(1, 50)
-    if random_id in pokemon_cache:
-        return pokemon_cache[random_id]
-    else:
-        pokemon = get_pokemon_data(random_id)
-
+    pokemon = get_pokemon_data(random_id)
     if "error" in pokemon:
-        return pokemon  # Return error if Pokemon not found
+        return pokemon
 
-    data_to_return = {"id": pokemon["id"],
-                      "name": pokemon["name"],
-                      "silhouette": get_pokemon_silhouette_and_save_images(pokemon["sprites"]["other"]["official-artwork"]["front_shiny"], pokemon["id"])
-                      }
-    pokemon_cache[random_id] = data_to_return
+    decoy_names = set()
+    while len(decoy_names) < 3:
+        decoy_id = random.randint(1, 50)
+        if decoy_id != random_id:  # Avoid duplicate correct answer
+            decoy_pokemon = get_pokemon_data(decoy_id)
+            if "error" not in decoy_pokemon:
+                decoy_names.add(decoy_pokemon["name"])
 
-    return data_to_return
+    name_options = list(decoy_names)
+    correct_position = random.randint(0, 3)
+    name_options.insert(correct_position, pokemon["name"])
+
+    return {
+        "id": pokemon["id"],
+        "silhouette": get_pokemon_silhouette_and_save_images(pokemon["sprite"], pokemon["id"]),
+        "options": name_options
+    }
