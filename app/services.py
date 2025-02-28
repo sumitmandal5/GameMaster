@@ -10,6 +10,12 @@ pokemon_cache = {}
 
 def get_pokemon_data(id):
     """Fetches Pokemon data and caches in-memory"""
+    if id is None:
+        return {"error": f"Pokemon ID not provided"}
+
+    if id<1 or id > 50:
+        return {"error": f"Pokemon with ID <1 or ID > 50 not allowed"}
+
     if id in pokemon_cache:
         return pokemon_cache[id]
     try:
@@ -120,6 +126,13 @@ def get_random_pokemon_data():
 
 def check_pokemon_guess(pokemon_id, guessed_name):
     """Check if the player guessed correct name and return result"""
+
+    if pokemon_id is None:
+        return {"error": f"Pokemon id not provided"}
+
+    if guessed_name is None:
+        return {"error": f"guessed_name not provided"}
+
     pokemon = get_pokemon_data(pokemon_id)
 
     if "error" in pokemon:
@@ -128,7 +141,6 @@ def check_pokemon_guess(pokemon_id, guessed_name):
     correct_name = pokemon["name"]
 
     return {
-        "id": pokemon_id,
         "correct_name": correct_name,
         "full_image": get_pokemon_image_and_save(pokemon["sprite"], pokemon_id),
         "guessCorrect": guessed_name.lower() == correct_name.lower()
@@ -149,3 +161,4 @@ def get_pokemon_image_and_save(sprite_url, pokemon_id):
         return f"http://127.0.0.1:5000/{real_image_path}"
 
     return None
+
