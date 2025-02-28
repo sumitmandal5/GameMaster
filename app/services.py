@@ -86,10 +86,10 @@ def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
 
 '''
 Fetch the correct Pokemon using random_id (cached if available).
-Get three random decoy Pokemon (ensuring they are not the correct Pokemon).
-Check cache for decoys and fetch their names if missing.
+Get three random decoy Pokemon names while ensuring they are not the correct Pokemon.
+Check cache for decoys and fetch their names if missing using API call.
 Randomly shuffle the correct answer within the list of four options.
-Return the final response with Pokemon ID, silhouette, and shuffled names.
+Return the final response with Pokemon ID, silhouette image, and shuffled names.
 '''
 
 
@@ -100,20 +100,19 @@ def get_random_pokemon_data():
     if "error" in pokemon:
         return pokemon
 
-    decoy_names = set()
-    while len(decoy_names) < 3:
-        decoy_id = random.randint(1, 50)
-        if decoy_id != random_id:  # Avoid duplicate correct answer
-            decoy_pokemon = get_pokemon_data(decoy_id)
+    name_options = list()
+    while len(name_options) < 3:
+        random_decoy_id = random.randint(1, 50)
+        if random_decoy_id != random_id:  # Avoid duplicate correct answer
+            decoy_pokemon = get_pokemon_data(random_decoy_id)
             if "error" not in decoy_pokemon:
-                decoy_names.add(decoy_pokemon["name"])
+                name_options.append(decoy_pokemon["name"])
 
-    name_options = list(decoy_names)
     correct_position = random.randint(0, 3)
     name_options.insert(correct_position, pokemon["name"])
 
     return {
         "id": pokemon["id"],
-        "silhouette": get_pokemon_silhouette_and_save_images(pokemon["sprite"], pokemon["id"]),
+        "silhouetteImage": get_pokemon_silhouette_and_save_images(pokemon["sprite"], pokemon["id"]),
         "options": name_options
     }
