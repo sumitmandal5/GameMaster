@@ -4,11 +4,11 @@ import random
 from PIL import Image
 from io import BytesIO
 import logging
+from app.config import POKEAPI_URL, BASE_APPLICATION_URL, REAL_IMAGE_DIR, SILHOUETTE_DIR
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://pokeapi.co/api/v2/pokemon/"
 pokemon_cache = {}
 
 
@@ -25,7 +25,7 @@ def get_pokemon_data(id):
     if id in pokemon_cache:
         return pokemon_cache[id]
     try:
-        response = requests.get(f"{BASE_URL}{id}")
+        response = requests.get(f"{POKEAPI_URL}{id}")
         response.raise_for_status()
         data = response.json()
 
@@ -48,17 +48,15 @@ def get_pokemon_data(id):
 
 def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
     """Converts a Pokémon image into a silhouette and returns its stored URL."""
-    silhouette_dir = "static/silhouettes"
-    real_image_dir = "static/realImages"
-    os.makedirs(silhouette_dir, exist_ok=True)  # Ensure directory exists
-    os.makedirs(real_image_dir, exist_ok=True)
+    os.makedirs(SILHOUETTE_DIR, exist_ok=True)  # Ensure directory exists
+    os.makedirs(REAL_IMAGE_DIR, exist_ok=True)
 
-    silhouette_path = f"{silhouette_dir}/{pokemon_id}.png"
-    real_image_path = f"{real_image_dir}/{pokemon_id}.png"
+    silhouette_path = f"{SILHOUETTE_DIR}/{pokemon_id}.png"
+    real_image_path = f"{REAL_IMAGE_DIR}/{pokemon_id}.png"
 
     # If silhouette already exists, return the existing file path
     if os.path.exists(silhouette_path):
-        return f"http://127.0.0.1:5000/{silhouette_path}"
+        return f"{BASE_APPLICATION_URL}{silhouette_path}"
     try:
         response = requests.get(sprite_url)
     except requests.exceptions.RequestException as ex:
@@ -101,7 +99,7 @@ def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
 
             img.save(silhouette_path, format="PNG")  # Save with transparency
 
-            return f"http://127.0.0.1:5000/{silhouette_path}"  # Return URL
+            return f"{BASE_APPLICATION_URL}{silhouette_path}"  # Return URL
         except Exception as ex:
             logger.error(f"Error processing silhouette for Pokemon ID {pokemon_id}: {ex}")
             return {"error": "An unexpected error occurred while processing silhouette"}
@@ -167,10 +165,9 @@ def check_pokemon_guess(pokemon_id, guessed_name):
 
 def get_pokemon_image_and_save(sprite_url, pokemon_id):
     """check if the image is saved and send it"""
-    real_image_dir = "static/realImages"
-    real_image_path = f"{real_image_dir}/{pokemon_id}.png"
+    real_image_path = f"{REAL_IMAGE_DIR}/{pokemon_id}.png"
     if os.path.exists(real_image_path):
-        return f"http://127.0.0.1:5000/{real_image_path}"
+        return f"{BASE_APPLICATION_URL}{real_image_path}"
     try:
         response = requests.get(sprite_url)
 
@@ -185,7 +182,7 @@ def get_pokemon_image_and_save(sprite_url, pokemon_id):
         try:
             img = Image.open(BytesIO(response.content)).convert("RGBA")
             img.save(real_image_path, format="PNG")
-            return f"http://127.0.0.1:5000/{real_image_path}"
+            return f"{BASE_APPLICATION_URL}{real_image_path}"
         except IOError as ex:
             logger.error(f"Failed to process image for Pokemon ID {pokemon_id}: {ex}")
             return {"error": "Failed to process image"}

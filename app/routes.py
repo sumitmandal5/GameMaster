@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, send_from_directory, request, abort
 from flask_restx import Api, Resource, fields
 from werkzeug.exceptions import NotFound
+from app.config import REAL_IMAGE_DIR, SILHOUETTE_DIR
 
 from app.services import *
 import logging
@@ -69,7 +70,7 @@ class ServeSilhouettes(Resource):
     def get(self, filename):
         """Serve Pokemon silhouette images"""
         try:
-            return send_from_directory("../static/silhouettes", filename)
+            return send_from_directory(f"../{SILHOUETTE_DIR}", filename)
         except NotFound:
             logger.error(f"Silhouette image not found: {filename}")
             abort(404, description="Silhouette image not found")
@@ -121,7 +122,7 @@ class ServeSilhouettes(Resource):
     def get(self, filename):
         """Serve Pokemon real images"""
         try:
-            return send_from_directory("../static/realImages", filename)
+            return send_from_directory(f"../{REAL_IMAGE_DIR}", filename)
         except NotFound:
             logger.error(f"Real image not found: {filename}")
             abort(404, description="Real image not found")
