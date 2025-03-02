@@ -31,9 +31,11 @@ def test_serve_static_silhouettes_whenCalled_thenItshouldRespondWithExpectedstat
     response = client.get("/static/silhouettes/25.png")
     assert response.status_code in [200, 404]
 
+
 def test_serve_static_realImages_whenCalled_thenItshouldRespondWithExpectedstatusCode(client):
     response = client.get("/static/silhouettes/25.png")
     assert response.status_code in [200, 404]
+
 
 @patch("app.services.check_pokemon_guess", return_value={
     "correctName": "pikachu",

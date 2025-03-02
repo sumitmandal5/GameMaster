@@ -13,7 +13,7 @@ def get_pokemon_data(id):
     if id is None:
         return {"error": f"Pokemon ID not provided"}
 
-    if id<1 or id > 50:
+    if id < 1 or id > 50:
         return {"error": f"Pokemon with ID <1 or ID > 50 not allowed"}
 
     if id in pokemon_cache:
@@ -36,17 +36,6 @@ def get_pokemon_data(id):
         return {"error": f"Pokemon with ID {id} not found"}
 
 
-'''
-Grayscale conversion (img.convert("L"))
-Converts the image to black & white shades.
-Thresholding (img.point(lambda p: 0 if p < threshold else 255))
-Makes dark areas black and light areas white.
-threshold = 50 (adjust if needed).
-Transparency Fix
-Any white pixels are turned transparent ((255, 255, 255, 0)).
-'''
-
-
 def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
     """Converts a Pokémon image into a silhouette and returns its stored URL."""
     silhouette_dir = "static/silhouettes"
@@ -66,10 +55,19 @@ def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
         img = Image.open(BytesIO(response.content)).convert("RGBA")  # Ensure transparency
         img.save(real_image_path, format="PNG")  # Save real image
 
-        # Convert image to grayscale
+        # ref: https://pillow.readthedocs.io/en/stable/
+        '''
+        1. Convert an image to grayscale.
+        https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
+        2. Apply a threshold to separate the foreground (the silhouette) from the background.
+        https://www.geeksforgeeks.org/python-pil-image-point-method/
+        3. Adjust pixel transparency for creating a silhouette effect.
+        '''
+
+        # 1. Convert an image to grayscale.
         img = img.convert("L")
 
-        # Apply threshold to create a silhouette effect
+        # 2. Apply a threshold to separate the foreground (the silhouette) from the background.
         threshold = 150  # Adjust this to get a better silhouette effect
         img = img.point(lambda p: 0 if p < threshold else 255)
 
@@ -77,12 +75,14 @@ def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
         img = img.convert("RGBA")
         pixels = img.load()
 
+        # iterate over pixels and transform all other colours to white
         for y in range(img.height):
             for x in range(img.width):
                 if pixels[x, y][0] == 0:  # Black areas remain black
                     pixels[x, y] = (0, 0, 0, 255)  # Fully black
                 else:
-                    pixels[x, y] = (255, 255, 255, 0)  # Transparent background
+                    pixels[x, y] = (255, 255, 255, 0)
+                    # RGBAlpha - Alpha set to 0 - sets the pixel to fully transparent white. Non-black areas turn transparent
 
         img.save(silhouette_path, format="PNG")  # Save with transparency
 
@@ -161,4 +161,3 @@ def get_pokemon_image_and_save(sprite_url, pokemon_id):
         return f"http://127.0.0.1:5000/{real_image_path}"
 
     return None
-
