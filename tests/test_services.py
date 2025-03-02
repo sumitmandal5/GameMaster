@@ -22,6 +22,7 @@ def clear_cache():
     """Clear the Pokemon cache before each test to ensure fresh API calls."""
     pokemon_cache.clear()
 
+
 @pytest.fixture
 def mock_requests_get():
     """Mock requests.get to return pokemon json object"""
@@ -31,6 +32,7 @@ def mock_requests_get():
         mock_response._content = json.dumps(pokemon_mock).encode("utf-8")
         mock_get.return_value = mock_response
         yield mock_get
+
 
 def test_get_pokemon_data_when_invoked_returnsPokemonJsonData(mock_requests_get):
     pokemon = get_pokemon_data(25)
