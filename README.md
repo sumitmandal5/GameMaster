@@ -13,3 +13,11 @@ python -m pytest
 # Edge Cases
 1. What if just before fetching the image, it gets deleted. AWS S3 is very reliable. 
 However it is a design choice if we want to handle this scenario.
+
+# Improvements
+1. Improve unit testing
+2. Improve debugging
+3. Improve documentation
+4. Handle more edge cases and errors
+5. Dockerize the project for deployment
+6. Finalize deployment strategy and do the changes
