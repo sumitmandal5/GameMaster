@@ -1,8 +1,11 @@
-from flask import Blueprint, jsonify, send_from_directory, request
+from flask import Blueprint, jsonify, send_from_directory, request, abort
 from flask_restx import Api, Resource, fields
 from app.services import *
 
 router = Blueprint('api', __name__)
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # for swagger documentation initialize flask-restx
 api = Api(router, version="1.0", title="Pokemon API", description="API for Pokemon guessing game")
@@ -34,8 +37,12 @@ response_model = api.model("GuessResponse", {
 class RandomPokemon(Resource):
     @api.marshal_with(pokemon_model)
     def get(self):
-        """Get a random Pokemon silhouette and options"""
-        data = get_random_pokemon_data()
+        """Get a random Pokemon silhouette and options for the player to guess from"""
+        try:
+            data = get_random_pokemon_data()
+        except Exception as ex:
+            logger.error(f"error in /random: {ex}")
+            abort(500, description="Internal server error")
         return data
 
 
@@ -43,7 +50,14 @@ class RandomPokemon(Resource):
 class ServeSilhouettes(Resource):
     def get(self, filename):
         """Serve Pokemon silhouette images"""
-        return send_from_directory("../static/silhouettes", filename)
+        try:
+            return send_from_directory("../static/silhouettes", filename)
+        except FileNotFoundError:
+            logger.error(f"Silhouette image not found: {filename}")
+            abort(404, description="Silhouette image not found")
+        except Exception as ex:
+            logger.error(f"Unexpected error serving silhouette image {filename}: {ex}")
+            abort(500, description="Internal server error")
 
 
 @ns.route("/guess")
@@ -57,17 +71,31 @@ class GuessPokemon(Resource):
         guessed_name = data.get("guessedName")
 
         if not pokemon_id:
-            return jsonify({"error": "Missing required field id"}), 400
+            logger.error("Missing required field: id")
+            abort(400, description="Missing required field: id")
 
         if not guessed_name:
-            return jsonify({"error": "Missing required field guessedName"}), 400
-
-        result = check_pokemon_guess(pokemon_id, guessed_name)
-        return result
-
+            logger.error("Missing required field: guessedName")
+            abort(400, description="Missing required field: guessedName")
+        try:
+            result = check_pokemon_guess(pokemon_id, guessed_name)
+            if "error" in result:
+                logger.error(f"Failed to check guess for Pokemon ID {pokemon_id}: {result['error']}")
+                abort(400, description="Failed to check guess for Pokemon ID {pokemon_id}")
+            return result
+        except Exception as ex:
+            logger.error(f"Error in /guess: {ex}")
+            abort(500, description="Internal server error")
 
 @static_ns.route("/realImages/<path:filename>")
 class ServeSilhouettes(Resource):
     def get(self, filename):
         """Serve Pokemon real images"""
-        return send_from_directory("../static/realImages", filename)
+        try:
+            return send_from_directory("../static/realImages", filename)
+        except FileNotFoundError:
+            logger.error(f"Real image not found: {filename}")
+            abort(404, description="Real image not found")
+        except Exception as ex:
+            logger.error(f"Unexpected error serving real image {filename}: {ex}")
+            abort(500, description="Internal server error")

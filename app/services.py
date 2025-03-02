@@ -3,6 +3,10 @@ import requests
 import random
 from PIL import Image
 from io import BytesIO
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://pokeapi.co/api/v2/pokemon/"
 pokemon_cache = {}
@@ -11,9 +15,11 @@ pokemon_cache = {}
 def get_pokemon_data(id):
     """Fetches Pokemon data and caches in-memory"""
     if id is None:
+        logger.error("Pokemon ID not provided")
         return {"error": f"Pokemon ID not provided"}
 
     if id < 1 or id > 50:
+        logger.warning(f"Pokemon ID {id} is out of the allowed range (1-50)")
         return {"error": f"Pokemon with ID <1 or ID > 50 not allowed"}
 
     if id in pokemon_cache:
@@ -32,8 +38,12 @@ def get_pokemon_data(id):
         pokemon_cache[id] = pokemon_info
         return pokemon_info
 
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as ex:
+        logger.error(f"Failed to fetch data for Pokemon ID {id}: {ex}")
         return {"error": f"Pokemon with ID {id} not found"}
+    except Exception as ex:
+        logger.error(f"Unexpected error fetching Pokemon data: {ex}")
+        return {"error": "An unexpected error occurred while fetching Pokemon data"}
 
 
 def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
@@ -49,44 +59,52 @@ def get_pokemon_silhouette_and_save_images(sprite_url, pokemon_id):
     # If silhouette already exists, return the existing file path
     if os.path.exists(silhouette_path):
         return f"http://127.0.0.1:5000/{silhouette_path}"
+    try:
+        response = requests.get(sprite_url)
+    except requests.exceptions.RequestException as ex:
+        logger.error(f"Failed to fetch sprite image for Pokemon ID {pokemon_id}: {ex}")
+        return {"error": "Failed to fetch sprite image"}
 
-    response = requests.get(sprite_url)
     if response.status_code == 200:
-        img = Image.open(BytesIO(response.content)).convert("RGBA")  # Ensure transparency
-        img.save(real_image_path, format="PNG")  # Save real image
+        try:
+            img = Image.open(BytesIO(response.content)).convert("RGBA")  # Ensure transparency
+            img.save(real_image_path, format="PNG")  # Save real image
 
-        # ref: https://pillow.readthedocs.io/en/stable/
-        '''
-        1. Convert an image to grayscale.
-        https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
-        2. Apply a threshold to separate the foreground (the silhouette) from the background.
-        https://www.geeksforgeeks.org/python-pil-image-point-method/
-        3. Adjust pixel transparency for creating a silhouette effect.
-        '''
+            # ref: https://pillow.readthedocs.io/en/stable/
+            '''
+            1. Convert an image to grayscale.
+            https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
+            2. Apply a threshold to separate the foreground (the silhouette) from the background.
+            https://www.geeksforgeeks.org/python-pil-image-point-method/
+            3. Adjust pixel transparency for creating a silhouette effect.
+            '''
 
-        # 1. Convert an image to grayscale.
-        img = img.convert("L")
+            # 1. Convert an image to grayscale.
+            img = img.convert("L")
 
-        # 2. Apply a threshold to separate the foreground (the silhouette) from the background.
-        threshold = 150  # Adjust this to get a better silhouette effect
-        img = img.point(lambda p: 0 if p < threshold else 255)
+            # 2. Apply a threshold to separate the foreground (the silhouette) from the background.
+            threshold = 150  # Adjust this to get a better silhouette effect
+            img = img.point(lambda p: 0 if p < threshold else 255)
 
-        # Convert to black-and-transparent silhouette
-        img = img.convert("RGBA")
-        pixels = img.load()
+            # Convert to black-and-transparent silhouette
+            img = img.convert("RGBA")
+            pixels = img.load()
 
-        # iterate over pixels and transform all other colours to white
-        for y in range(img.height):
-            for x in range(img.width):
-                if pixels[x, y][0] == 0:  # Black areas remain black
-                    pixels[x, y] = (0, 0, 0, 255)  # Fully black
-                else:
-                    pixels[x, y] = (255, 255, 255, 0)
-                    # RGBAlpha - Alpha set to 0 - sets the pixel to fully transparent white. Non-black areas turn transparent
+            # iterate over pixels and transform all other colours to white
+            for y in range(img.height):
+                for x in range(img.width):
+                    if pixels[x, y][0] == 0:  # Black areas remain black
+                        pixels[x, y] = (0, 0, 0, 255)  # Fully black
+                    else:
+                        pixels[x, y] = (255, 255, 255, 0)
+                        # RGBAlpha - Alpha set to 0 - sets the pixel to fully transparent white. Non-black areas turn transparent
 
-        img.save(silhouette_path, format="PNG")  # Save with transparency
+            img.save(silhouette_path, format="PNG")  # Save with transparency
 
-        return f"http://127.0.0.1:5000/{silhouette_path}"  # Return URL
+            return f"http://127.0.0.1:5000/{silhouette_path}"  # Return URL
+        except Exception as ex:
+            logger.error(f"Error processing silhouette for Pokemon ID {pokemon_id}: {ex}")
+            return {"error": "An unexpected error occurred while processing silhouette"}
     return None
 
 
@@ -153,11 +171,23 @@ def get_pokemon_image_and_save(sprite_url, pokemon_id):
     real_image_path = f"{real_image_dir}/{pokemon_id}.png"
     if os.path.exists(real_image_path):
         return f"http://127.0.0.1:5000/{real_image_path}"
+    try:
+        response = requests.get(sprite_url)
 
-    response = requests.get(sprite_url)
+    except requests.exceptions.RequestException as ex:
+        logger.error(f"Failed to fetch sprite image for Pokemon ID {pokemon_id}: {ex}")
+        return {"error": "Failed to fetch sprite image"}
+    except Exception as ex:
+        logger.error(f"Unexpected error processing image for Pokemon ID {pokemon_id}: {ex}")
+        return {"error": "An Error occurred while processing image"}
+
     if response.status_code == 200:
-        img = Image.open(BytesIO(response.content)).convert("RGBA")  # Ensure transparency
-        img.save(real_image_path, format="PNG")  # Save real image
-        return f"http://127.0.0.1:5000/{real_image_path}"
+        try:
+            img = Image.open(BytesIO(response.content)).convert("RGBA")
+            img.save(real_image_path, format="PNG")
+            return f"http://127.0.0.1:5000/{real_image_path}"
+        except IOError as ex:
+            logger.error(f"Failed to process image for Pokemon ID {pokemon_id}: {ex}")
+            return {"error": "Failed to process image"}
 
     return None
