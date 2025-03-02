@@ -38,3 +38,7 @@ However it is a design choice if we want to handle this scenario.
 4. Handle more edge cases and errors
 5. Dockerize the project for deployment
 6. Finalize deployment strategy and do the changes
+
+# System Design
+
+![img.png](img.png)
