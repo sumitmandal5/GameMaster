@@ -41,4 +41,4 @@ However it is a design choice if we want to handle this scenario.
 
 # System Design
 
-![img.png](img.png)
+![](D:\PythonPrograms\pythonAegonAssignment\SystemDesign.png)
