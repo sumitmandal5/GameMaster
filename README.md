@@ -4,6 +4,11 @@
    pip install -r requirements.txt
 3. Click on the run button
 
+Base URL: http://127.0.0.1:5000
+The API only supports Pokemon with IDs between 1 and 50.
+Errors are returned with appropriate HTTP status codes (400, 404, 500).
+The /static/ endpoints serve images and may return 404 if the file is missing.
+
 # Steps To run the project in local machine without IDE
 1. Clone the project and go to GameMaster directory.
 2. Create a Virtual Environment
