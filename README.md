@@ -4,6 +4,10 @@
    pip install -r requirements.txt
 3. Click on the run button
 
+# Swagger API Documentation 
+After running the app on local, the swagger API documentation can be found at http://localhost:5000/api/docs
+
+
 # Command to run unit tests:
 python -m pytest
 

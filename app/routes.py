@@ -11,7 +11,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # for swagger documentation initialize flask-restx
-api = Api(router, version="1.0", title="Pokemon API", description="API for Pokemon guessing game")
+#api = Api(router, version="1.0", title="Pokemon API", description="API for Pokemon guessing game")
+api = Api(router,
+          version="1.0",
+          title="Pokemon API",
+          description="API for Pokemon guessing game",
+          doc="/api/docs")
 
 ns = api.namespace("pokemon", description="Pokemon operations")
 static_ns = api.namespace("static", description="getting static contents")
